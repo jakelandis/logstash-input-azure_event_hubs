@@ -1,0 +1,6 @@
+Gemfile.lock
+.gem
+.raketasks
+vendor/
+.gradle
+build/
