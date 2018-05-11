@@ -21,6 +21,7 @@ class LogStash::Inputs::AzureEventHub < LogStash::Inputs::Base
   config_name "azure_event_hubs"
   config :event_hubs, :validate => :array, :required => true
   config :auto_commit_interval_ms, :validate => :number, :default => 5000
+  config :decorate_events, :validate => :boolean, :default => false
 
   def register
     # TODO: check the event hubs content and echo non-sensitive config
@@ -77,7 +78,7 @@ class LogStash::Inputs::AzureEventHub < LogStash::Inputs::Base
 
         options = EventProcessorOptions.new
         options.setExceptionNotification(LogStash::Inputs::Azure::ErrorNotificationHandler.new)
-        event_processor_host.registerEventProcessorFactory(LogStash::Inputs::Azure::ProcessorFactory.new(queue, @codec.clone, @auto_commit_interval_ms, self.method(:decorate)), options)
+        event_processor_host.registerEventProcessorFactory(LogStash::Inputs::Azure::ProcessorFactory.new(queue, @codec.clone, @auto_commit_interval_ms, self.method(:decorate), @decorate_events), options)
             .whenComplete {|x, e|
               @logger.info("Registration complete")
               @logger.error("Failure while registering.", :exception => e, :backtrace => e.backtrace) if e

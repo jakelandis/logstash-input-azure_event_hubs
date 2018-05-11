@@ -7,12 +7,13 @@ module LogStash
         include LogStash::Util::Loggable
         include com.microsoft.azure.eventprocessorhost.IEventProcessor
 
-        def initialize(queue, codec, auto_commit_interval_ms, decorator)
+        def initialize(queue, codec, auto_commit_interval_ms, decorator, meta_data)
           @queue = queue
           @codec = codec
           @auto_commit_interval_ms = auto_commit_interval_ms
           @last = Time.now.to_f * 1000
           @decorator = decorator
+          @meta_data = meta_data
           @logger = self.logger
 
         end
@@ -36,9 +37,18 @@ module LogStash
             @logger.trace("Event Hub: #{context.getEventHubPath.to_s}, Partition: #{context.getPartitionId.to_s}, Offset: #{payload.getSystemProperties.getOffset.to_s},"+
                               " Sequence: #{payload.getSystemProperties.getSequenceNumber.to_s}, Size: #{bytes.size}") if @logger.trace?
 
-            @codec.decode(java.lang.String.new(bytes, "UTF-8").to_s) do |event|
+            @codec.decode(bytes.to_a.pack('C*')) do |event|
 
               @decorator.call(event)
+              if @meta_data
+                event.set("[@metadata][azure_event_hub][name]", context.getEventHubPath)
+                event.set("[@metadata][azure_event_hub][consumer_group]", context.getConsumerGroupName)
+                event.set("[@metadata][azure_event_hub][partition]", context.getPartitionId)
+                event.set("[@metadata][azure_event_hub][offset]", payload.getSystemProperties.getOffset)
+                event.set("[@metadata][azure_event_hub][sequence]", payload.getSystemProperties.getSequenceNumber)
+                event.set("[@metadata][azure_event_hub][timestamp]",payload.getSystemProperties.getEnqueuedTime.getEpochSecond)
+                event.set("[@metadata][azure_event_hub][event_size]", bytes.size)
+              end
               @queue << event
               if @auto_commit_interval_ms >= 0
                 now = Time.now.to_f * 1000
