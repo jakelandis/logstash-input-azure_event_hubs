@@ -7,11 +7,10 @@ module LogStash
         include LogStash::Util::Loggable
         include com.microsoft.azure.eventprocessorhost.IEventProcessor
 
-        def initialize(queue, codec, auto_commit_interval_ms, decorator, meta_data)
+        def initialize(queue, codec, checkpoint_interval, decorator, meta_data)
           @queue = queue
           @codec = codec
-          @auto_commit_interval_ms = auto_commit_interval_ms
-          @last = Time.now.to_f * 1000
+          @checkpoint_interval = checkpoint_interval
           @decorator = decorator
           @meta_data = meta_data
           @logger = self.logger
@@ -31,7 +30,7 @@ module LogStash
           last_payload = nil
           batch_size = 0
           batch.each do |payload|
-
+            last_checkpoint = Time.now.to_i
             bytes = payload.getBytes
             batch_size += bytes.size
             @logger.trace("Event Hub: #{context.getEventHubPath.to_s}, Partition: #{context.getPartitionId.to_s}, Offset: #{payload.getSystemProperties.getOffset.to_s},"+
@@ -41,21 +40,22 @@ module LogStash
 
               @decorator.call(event)
               if @meta_data
-                event.set("[@metadata][azure_event_hub][name]", context.getEventHubPath)
-                event.set("[@metadata][azure_event_hub][consumer_group]", context.getConsumerGroupName)
-                event.set("[@metadata][azure_event_hub][partition]", context.getPartitionId)
-                event.set("[@metadata][azure_event_hub][offset]", payload.getSystemProperties.getOffset)
-                event.set("[@metadata][azure_event_hub][sequence]", payload.getSystemProperties.getSequenceNumber)
-                event.set("[@metadata][azure_event_hub][timestamp]",payload.getSystemProperties.getEnqueuedTime.getEpochSecond)
-                event.set("[@metadata][azure_event_hub][event_size]", bytes.size)
+                event.set("[@metadata][azure_event_hubs][name]", context.getEventHubPath)
+                event.set("[@metadata][azure_event_hubs][consumer_group]", context.getConsumerGroupName)
+                event.set("[@metadata][azure_event_hubs][processor_host]", context.getOwner)
+                event.set("[@metadata][azure_event_hubs][partition]", context.getPartitionId)
+                event.set("[@metadata][azure_event_hubs][offset]", payload.getSystemProperties.getOffset)
+                event.set("[@metadata][azure_event_hubs][sequence]", payload.getSystemProperties.getSequenceNumber)
+                event.set("[@metadata][azure_event_hubs][timestamp]",payload.getSystemProperties.getEnqueuedTime.getEpochSecond)
+                event.set("[@metadata][azure_event_hubs][event_size]", bytes.size)
               end
               @queue << event
-              if @auto_commit_interval_ms >= 0
-                now = Time.now.to_f * 1000
-                since_last_check_point = now - @last
-                if since_last_check_point >= @auto_commit_interval_ms
+              if @checkpoint_interval > 0
+                now = Time.now.to_i
+                since_last_check_point = now - last_checkpoint
+                if since_last_check_point >= @checkpoint_interval
                   context.checkpoint(payload).get
-                  @last = now
+                  last_checkpoint = now
                 end
               end
             end

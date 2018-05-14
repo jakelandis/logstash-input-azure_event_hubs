@@ -6,16 +6,16 @@ module LogStash
       class ProcessorFactory
         include com.microsoft.azure.eventprocessorhost.IEventProcessorFactory
 
-        def initialize(queue, codec, auto_commit_interval_ms, decorator, meta_data)
+        def initialize(queue, codec, checkpoint_interval, decorator, meta_data)
           @queue = queue
           @codec = codec
-          @auto_commit_interval_ms = auto_commit_interval_ms
+          @checkpoint_interval = checkpoint_interval
           @decorator = decorator
           @meta_data = meta_data
         end
 
         def createEventProcessor(context)
-          Processor.new(@queue, @codec, @auto_commit_interval_ms, @decorator, @meta_data)
+          Processor.new(@queue, @codec, @checkpoint_interval, @decorator, @meta_data)
         end
 
       end
