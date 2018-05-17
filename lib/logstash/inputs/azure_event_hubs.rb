@@ -18,7 +18,7 @@ java_import java.util.concurrent.Executors
 java_import java.util.concurrent.TimeUnit
 
 
-class LogStash::Inputs::AzureEventHub < LogStash::Inputs::Base
+class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   config_name "azure_event_hubs"
 
   # The event hubs to connect read from. This configuration supports two formats. The simple array form that assumes all of the other configurations options apply uniformly across all event hubs.
@@ -206,6 +206,8 @@ class LogStash::Inputs::AzureEventHub < LogStash::Inputs::Base
     end
   end
 
+  attr_reader :event_hubs_exploded
+
   def register
     # augment the exploded config with the defaults
     @event_hubs_exploded.each do |event_hub|
@@ -272,7 +274,6 @@ class LogStash::Inputs::AzureEventHub < LogStash::Inputs::Base
               @logger.debug("If this is the initial read... " + msg) if event_hub['storage_connection']
               @logger.info(msg) unless event_hub['storage_connection']
               options.setInitialPositionProvider(LogStash::Inputs::Azure::LookBackPositionProvider.new(@initial_position_look_back))
-
           end
 
           event_processor_host.registerEventProcessorFactory(LogStash::Inputs::Azure::ProcessorFactory.new(queue, event_hub['codec'].clone, event_hub['checkpoint_interval'], self.method(:decorate), event_hub['decorate_events']), options)

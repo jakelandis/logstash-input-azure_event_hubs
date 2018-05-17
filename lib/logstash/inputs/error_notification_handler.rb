@@ -13,7 +13,6 @@ module LogStash
           @logger = self.logger
         end
 
-        # not sure exactly when this will be called (instead of the other exception handlers), but this is how the exception handling is modeling in the example code.
         def accept(exception_received_event_args)
           @logger.error("Error with Event Processor Host #{exception_received_event_args.to_s}")
         end
