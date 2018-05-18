@@ -2,6 +2,7 @@
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/inputs/azure_event_hubs"
 
+#TODO: FIX THESE TESTS TO REFLECT MOST RECENT CHANGES TO THE BASIC V.S. ADVANCED
 describe LogStash::Inputs::AzureEventHubs do
 
   subject(:input) {LogStash::Plugin.lookup("input", "azure_event_hubs").new(config)}
@@ -32,9 +33,10 @@ describe LogStash::Inputs::AzureEventHubs do
     describe "Global Config" do
       let(:config) do
         {
-            'event_hubs' => ['event_hub_name0', 'event_hub_name1'],
-            'event_hub_connection' => 'Endpoint=sb://...',
-            'storage_connection' => 'DefaultEndpointsProtocol=https;AccountName=...',
+
+            'event_hub_connections' => ['Endpoint=sb://...', '2','3'],
+
+            'storage_connection' => 'DefaultEndpointsProtocol=https;AccountName=...'
             'threads' => 8,
             'codec' => 'plain',
             'consumer_group' => 'cg',
@@ -70,10 +72,10 @@ describe LogStash::Inputs::AzureEventHubs do
                 'event_hub_name1' => {
                     'event_hub_connection' => '1Endpoint=sb://...',
                     'storage_connection' => '1DefaultEndpointsProtocol=https;AccountName=...',
-                    'codec' => 'plain',
+                    'codec' => 'json',
                     'consumer_group' => '1cg',
                     'receive_timeout' => 41,
-                    'initial_position' => 'LOOK_BACK',
+                    'initial_position' => 'tail',
                     'initial_position_look_back' => 51,
                     'checkpoint_interval' => 61,
                     'decorate_events' => false}
@@ -82,8 +84,6 @@ describe LogStash::Inputs::AzureEventHubs do
             'threads' => 8,
             'consumer_group' => 'default_consumer_group',
             'max_batch_size' => 21
-
-
         }
       end
       it_behaves_like "an exploded Event Hub config", 1
@@ -93,11 +93,11 @@ describe LogStash::Inputs::AzureEventHubs do
         expect(exploded_config[1]['event_hubs'][0]).to eql('event_hub_name1')
         expect(exploded_config[1]['event_hub_connection'].value).to eql('1Endpoint=sb://...')
         expect(exploded_config[1]['storage_connection'].value).to eql('1DefaultEndpointsProtocol=https;AccountName=...')
-        expect(exploded_config[1]['threads']).to be_nil
-        expect(exploded_config[1]['codec']).to be_a_kind_of(LogStash::Codecs::Plain)
-        expect(exploded_config[1]['consumer_group']).to eql('1cg')
-        expect(exploded_config[1]['max_batch_size']).to be == 21
-        expect(exploded_config[1]['prefetch_count']).to be_nil # removed this from the
+        expect(exploded_config[1]['threads']).to be_nil # we don't explode threads to the per event hub config
+        expect(exploded_config[1]['codec']).to be_a_kind_of(LogStash::Codecs::JSON) # different between configs
+        expect(exploded_config[1]['consumer_group']).to eql('1cg') # override global
+        expect(exploded_config[1]['max_batch_size']).to be == 21 # filled from global
+        expect(exploded_config[1]['prefetch_count']).to be_nil # removed this from the config above
         expect(exploded_config[1]['receive_timeout']).to be == 41
         expect(exploded_config[1]['initial_position']).to eql('LOOK_BACK')
         expect(exploded_config[1]['initial_position_look_back']).to be == 51
