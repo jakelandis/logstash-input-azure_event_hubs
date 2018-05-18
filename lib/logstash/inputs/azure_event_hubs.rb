@@ -53,7 +53,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   #    ]
   #    consumer_group => "logstash" # shared across all Event Hubs
   # }
-  config :event_hubs, :validate => :array
+  config :event_hubs, :validate => :array, :required => true # only required for advanced mode
 
   # BASIC MODE ONLY - The Event Hubs to read from. This is a list of Event Hub connection strings that includes the 'EntityPath'.
   # All other configuration options will be shared between Event Hubs.
@@ -62,7 +62,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   #    config_mode => "BASIC"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"  , "Endpoint=sb://example2...;EntityPath=event_hub_name2"  ]
   # }
-  config :event_hub_connections, :validate => :array
+  config :event_hub_connections, :validate => :array, :required => true # only required for basic mode
 
   # Used to persists the offsets between restarts and ensure that multiple instances of Logstash process different partitions
   # This is *stongly* encouraged to be set for production environments.
@@ -298,11 +298,11 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
       if !k.eql?('id') && !k.eql?('event_hubs') && !k.eql?('threads') # don't copy these to the per-event-hub configs
         global_config[k] = v
       end
-      # , :required => config_mode.upcase.eql?('BASIC') ? true : false
     end
 
-    puts params.to_s
     if params['config_mode'] && params['config_mode'].upcase.eql?('ADVANCED')
+      params['event_hub_connections'] = ['dummy'] # trick the :required validation
+
       params['event_hubs'].each do |event_hub|
         raise "event_hubs must be a Hash" unless event_hub.is_a?(Hash)
         event_hub.each do |event_hub_name, config|
@@ -322,16 +322,17 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
         end
       end
     else
+      params['event_hubs'] = ['dummy'] # trick the :required validation
       if params['event_hub_connections']
         params['event_hub_connections'].each do |connection|
-            begin
-              event_hub_name = ConnectionStringBuilder.new(connection).getEventHubName
-              raise "invalid name" unless event_hub_name
-            rescue
-              redacted_connection = connection.gsub(/(SharedAccessKey=)([0-9a-zA-Z=]*)([;]*)(.*)/, '\\1<redacted>\\3\\4')
-              raise LogStash::ConfigurationError, "Error parsing event hub string name for connection: '#{redacted_connection}' please ensure that the connection string contains the EntityPath"
-            end
-            @event_hubs_exploded << {'event_hubs' => [event_hub_name]}.merge({'event_hub_connections' => [::LogStash::Util::Password.new(connection)]}).merge(global_config) {|k, v1, v2| v1}
+          begin
+            event_hub_name = ConnectionStringBuilder.new(connection).getEventHubName
+            raise "invalid name" unless event_hub_name
+          rescue
+            redacted_connection = connection.gsub(/(SharedAccessKey=)([0-9a-zA-Z=]*)([;]*)(.*)/, '\\1<redacted>\\3\\4')
+            raise LogStash::ConfigurationError, "Error parsing event hub string name for connection: '#{redacted_connection}' please ensure that the connection string contains the EntityPath"
+          end
+          @event_hubs_exploded << {'event_hubs' => [event_hub_name]}.merge({'event_hub_connections' => [::LogStash::Util::Password.new(connection)]}).merge(global_config) {|k, v1, v2| v1}
         end
       end
     end
@@ -387,7 +388,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
                 EventProcessorHost.createHostName('logstash'),
                 event_hub_name,
                 event_hub['consumer_group'],
-                event_hub['event_hub_connections'].first.value,  #there will only be one in this array by the time it gets here
+                event_hub['event_hub_connections'].first.value, #there will only be one in this array by the time it gets here
                 checkpoint_manager,
                 lease_manager,
                 scheduled_executor_service,
