@@ -48,7 +48,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   #       { "event_hub_name2" => {
   #           event_hub_connection => "Endpoint=sb://example2..."
   #           storage_connection => "DefaultEndpointsProtocol=https;AccountName=example...."
-  #          storage_container => "my_container"
+  #           storage_container => "my_container"
   #      }}
   #    ]
   #    consumer_group => "logstash" # shared across all Event Hubs
@@ -291,8 +291,9 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
 
   def initialize(params)
 
+    # explode the all of the parameters to be scoped per event_hub
     @event_hubs_exploded = []
-    # explode the parameters to be scoped per event_hub, prefer any configuration already scoped over the globally scoped config
+    # global_config will be merged into the each of the exploded configs, prefer any configuration already scoped over the globally scoped config
     global_config = {}
     params.each do |k, v|
       if !k.eql?('id') && !k.eql?('event_hubs') && !k.eql?('threads') # don't copy these to the per-event-hub configs

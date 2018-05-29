@@ -2,19 +2,18 @@
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/inputs/azure_event_hubs"
 
-#TODO: FIX THESE TESTS TO REFLECT MOST RECENT CHANGES TO THE BASIC V.S. ADVANCED
 describe LogStash::Inputs::AzureEventHubs do
 
   subject(:input) {LogStash::Plugin.lookup("input", "azure_event_hubs").new(config)}
 
   describe "Event Hubs Configuration -> " do
     shared_examples "an exploded Event Hub config" do |x|
-      it "it explodes the # #{x} event hub(s) correctly" do
+      it "it explodes #{x} event hub(s) correctly" do
         exploded_config = input.event_hubs_exploded
         x.times do |i|
           expect(exploded_config[i]['event_hubs'].size).to be == 1 #always 1 in the exploded form
           expect(exploded_config[i]['event_hubs'][0]).to eql('event_hub_name' + i.to_s)
-          expect(exploded_config[i]['event_hub_connection'].value).to eql('Endpoint=sb://...')
+          expect(exploded_config[i]['event_hub_connections'][0].value).to start_with('Endpoint=sb://...')
           expect(exploded_config[i]['storage_connection'].value).to eql('DefaultEndpointsProtocol=https;AccountName=...')
           expect(exploded_config[i]['threads']).to be_nil # we don't explode threads to the per event hub config
           expect(exploded_config[i]['codec']).to be_a_kind_of(LogStash::Codecs::Plain)
@@ -30,13 +29,11 @@ describe LogStash::Inputs::AzureEventHubs do
       end
     end
 
-    describe "Global Config" do
+    describe "Basic Config" do
       let(:config) do
         {
-
-            'event_hub_connections' => ['Endpoint=sb://...', '2','3'],
-
-            'storage_connection' => 'DefaultEndpointsProtocol=https;AccountName=...'
+            'event_hub_connections' => ['Endpoint=sb://...;EntityPath=event_hub_name0'  , 'Endpoint=sb://...;EntityPath=event_hub_name1'],
+            'storage_connection' => 'DefaultEndpointsProtocol=https;AccountName=...',
             'threads' => 8,
             'codec' => 'plain',
             'consumer_group' => 'cg',
@@ -49,13 +46,13 @@ describe LogStash::Inputs::AzureEventHubs do
             'decorate_events' => true
         }
       end
-
       it_behaves_like "an exploded Event Hub config", 2
     end
 
-    describe "Event Hub Config" do
+    describe "Advanced Config" do
       let(:config) do
         {
+            'config_mode' => 'ADVANCED',
             'event_hubs' => [
                 'event_hub_name0' => {
                     'event_hub_connection' => 'Endpoint=sb://...',
@@ -76,7 +73,6 @@ describe LogStash::Inputs::AzureEventHubs do
                     'consumer_group' => '1cg',
                     'receive_timeout' => 41,
                     'initial_position' => 'tail',
-                    'initial_position_look_back' => 51,
                     'checkpoint_interval' => 61,
                     'decorate_events' => false}
             ],
@@ -87,11 +83,11 @@ describe LogStash::Inputs::AzureEventHubs do
         }
       end
       it_behaves_like "an exploded Event Hub config", 1
-      it "it explodes the # 2 event hub(s) correctly" do
+      it "it explodes the 2cnd advanced config event hub correctly" do
         exploded_config = input.event_hubs_exploded
         expect(exploded_config[1]['event_hubs'].size).to be == 1 #always 1 in the exploded form
         expect(exploded_config[1]['event_hubs'][0]).to eql('event_hub_name1')
-        expect(exploded_config[1]['event_hub_connection'].value).to eql('1Endpoint=sb://...')
+        expect(exploded_config[1]['event_hub_connections'][0].value).to eql('1Endpoint=sb://...')
         expect(exploded_config[1]['storage_connection'].value).to eql('1DefaultEndpointsProtocol=https;AccountName=...')
         expect(exploded_config[1]['threads']).to be_nil # we don't explode threads to the per event hub config
         expect(exploded_config[1]['codec']).to be_a_kind_of(LogStash::Codecs::JSON) # different between configs
@@ -99,8 +95,8 @@ describe LogStash::Inputs::AzureEventHubs do
         expect(exploded_config[1]['max_batch_size']).to be == 21 # filled from global
         expect(exploded_config[1]['prefetch_count']).to be_nil # removed this from the config above
         expect(exploded_config[1]['receive_timeout']).to be == 41
-        expect(exploded_config[1]['initial_position']).to eql('LOOK_BACK')
-        expect(exploded_config[1]['initial_position_look_back']).to be == 51
+        expect(exploded_config[1]['initial_position'].upcase).to eql('TAIL')
+        expect(exploded_config[1]['initial_position_look_back']).to be_nil # removed this from the config above
         expect(exploded_config[1]['checkpoint_interval']).to be == 61
         expect(exploded_config[1]['decorate_events']).to be_falsy
       end
