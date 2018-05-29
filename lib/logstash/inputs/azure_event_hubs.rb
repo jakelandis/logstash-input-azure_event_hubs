@@ -86,7 +86,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   config :storage_connection, :validate => :password, :required => false
 
   # The storage container to persist the offsets.
-  # Note - don't allow multiple Event Hubs to write to the same container with the same consumer group, else the offsets will be persisted incorrectly. #TODO: add this custom validation to prevent this from happening
+  # Note - don't allow multiple Event Hubs to write to the same container with the same consumer group, else the offsets will be persisted incorrectly.
   # Note - this will default to the event hub name if not defined
   # BASIC Example:
   # azure_event_hubs {
@@ -108,7 +108,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   # }
   config :storage_container, :validate => :string, :required => false
 
-  # Total threads used process events. Requires at minimum 2 threads. This option can not be set per Event Hub. #TODO: add custom validation
+  # Total threads used process events. Requires at minimum 2 threads. This option can not be set per Event Hub.
   # azure_event_hubs {
   #    threads => 4
   # }
@@ -219,7 +219,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   # The number of seconds to look back for pre-existing events to determine the initial position.
   # Note - If the storage_connection is set, this configuration is only applicable for the very first time Logstash reads from the event hub.
   # Note - this options is only used when initial_position => "LOOK_BACK"
-  # Value is expressed in seconds
+  # Value is expressed in seconds, default is 1 day
   # BASIC Example:
   # azure_event_hubs {
   #    config_mode => "BASIC"
@@ -238,7 +238,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   #       }}
   #    ]
   # }
-  config :initial_position_look_back, :validate => :number, :required => false #TODO: custom validation
+  config :initial_position_look_back, :validate => :number, :default => 86400
 
   # The interval in seconds between writing checkpoint while processing a batch. Default 5 seconds. Checkpoints can slow down processing, but are needed to know where to start after a restart.
   # Note - checkpoints happen after every batch, so this configuration is only applicable while processing a single batch.
@@ -322,13 +322,13 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
           @event_hubs_exploded << config
         end
       end
-    else
+    else # basic config
       params['event_hubs'] = ['dummy'] # trick the :required validation
       if params['event_hub_connections']
         params['event_hub_connections'].each do |connection|
           begin
             event_hub_name = ConnectionStringBuilder.new(connection).getEventHubName
-            raise "invalid name" unless event_hub_name
+            raise "invalid Event Hub name" unless event_hub_name
           rescue
             redacted_connection = connection.gsub(/(SharedAccessKey=)([0-9a-zA-Z=]*)([;]*)(.*)/, '\\1<redacted>\\3\\4')
             raise LogStash::ConfigurationError, "Error parsing event hub string name for connection: '#{redacted_connection}' please ensure that the connection string contains the EntityPath"
@@ -340,12 +340,15 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
 
     super(params)
 
+    container_consumer_groups = []
     # explicitly validate all the per event hub configs
     @event_hubs_exploded.each do |event_hub|
       if !self.class.validate(event_hub)
         raise LogStash::ConfigurationError, I18n.t("logstash.runner.configuration.invalid_plugin_settings")
       end
+      container_consumer_groups << {event_hub['storage_connection'].value.to_s + (event_hub['storage_container'] ? event_hub['storage_container'] : event_hub['event_hubs'][0]) => event_hub['consumer_group']} if event_hub['storage_connection']
     end
+    raise "The configuration will result in overwriting offsets. Please ensure that the each Event Hub's consumer_group is using a unique storage container." if container_consumer_groups.size > container_consumer_groups.uniq.size
   end
 
   attr_reader :event_hubs_exploded
@@ -362,7 +365,6 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
     @logger.debug("Exploded Event Hub configuration: #{@event_hubs_exploded.to_s}")
   end
 
-  #TODO: BETTER TESTING WITH THE NEW CONFIG
   def run(queue)
     event_hub_threads = []
     named_thread_factory = LogStash::Inputs::Azure::NamedThreadFactory.new("azure_event_hubs-worker")
@@ -379,7 +381,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
                 event_hub['consumer_group'],
                 event_hub['event_hub_connections'].first.value, #there will only be one in this array by the time it gets here
                 event_hub['storage_connection'].value,
-                event_hub_name,
+                event_hub['storage_container'] ? event_hub['storage_container'] : event_hub_name,
                 scheduled_executor_service)
           else
             @logger.warn("You have NOT specified a `storage_connection_string` for #{event_hub_name}. This configuration is only supported for a single Logstash instance.")

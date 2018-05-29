@@ -32,7 +32,7 @@ describe LogStash::Inputs::AzureEventHubs do
     describe "Basic Config" do
       let(:config) do
         {
-            'event_hub_connections' => ['Endpoint=sb://...;EntityPath=event_hub_name0'  , 'Endpoint=sb://...;EntityPath=event_hub_name1'],
+            'event_hub_connections' => ['Endpoint=sb://...;EntityPath=event_hub_name0', 'Endpoint=sb://...;EntityPath=event_hub_name1'],
             'storage_connection' => 'DefaultEndpointsProtocol=https;AccountName=...',
             'threads' => 8,
             'codec' => 'plain',
@@ -101,8 +101,60 @@ describe LogStash::Inputs::AzureEventHubs do
         expect(exploded_config[1]['decorate_events']).to be_falsy
       end
     end
+
+    describe "Bad Basic Config" do
+      describe "Offset overwritting" do
+        let(:config) do
+          {
+              'event_hub_connections' => ['Endpoint=sb://...;EntityPath=event_hub_name0', 'Endpoint=sb://...;EntityPath=event_hub_name0'],
+              'storage_connection' => 'DefaultEndpointsProtocol=https;AccountName=...'
+          }
+        end
+        it "it errors when using same consumer group and storage container" do
+          expect {input}.to raise_error(/overwriting offsets/)
+        end
+      end
+
+      describe "Invalid Event Hub name" do
+        let(:config) do
+          {
+              'event_hub_connections' => ['Endpoint=sb://logstash/;SharedAccessKeyName=activity-log-readonly;SharedAccessKey=thisshouldnotbepartofthelogmessage'],
+              'storage_connection' => 'DefaultEndpointsProtocol=https;AccountName=...'
+          }
+        end
+        it "it errors when using same consumer group and storage container" do
+          expect {input}.to raise_error(/that the connection string contains the EntityPath/)
+          expect {input}.to raise_error(/redacted/)
+          expect {input}.to raise_error(/^((?!thisshouldnotbepartofthelogmessage).)*$/)
+        end
+      end
+
+    end
+
+    describe "Bad Advanced Config" do
+      describe "Offset overwritting" do
+        let(:config) do
+          {
+              'config_mode' => 'ADVANCED',
+              'event_hubs' => [
+                  'event_hub_name0' => {
+                      'event_hub_connection' => 'Endpoint=sb://...',
+                  },
+                  'event_hub_name1' => {
+                      'event_hub_connection' => '1Endpoint=sb://...',
+                  }
+              ],
+
+              'storage_connection' => 'DefaultEndpointsProtocol=https;AccountName=...',
+              'consumer_group' => 'default_consumer_group',
+              'storage_container' => 'logstash'
+          }
+        end
+        it "it errors when using same consumer group and storage container" do
+          expect {input}.to raise_error(/overwriting offsets/)
+        end
+      end
+    end
   end
 end
 
-#
-# #TODO: add some validation logic to the set of configurations and test here.
