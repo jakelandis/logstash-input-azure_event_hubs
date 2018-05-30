@@ -38,7 +38,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   # Note - while in ADVANCED mode, if any BASIC options are defined at the top level they will be used if not already defined under the Event Hub name.  e.g. you may define shared configuration at the top level
   # Note - the required event_hub_connection is named 'event_hub_connection' (singular) which differs from the BASIC configuration option 'event_hub_connections' (plural)
   # Note - the 'event_hub_connection' may contain the 'EntityPath', but only if it matches the Event Hub name.
-  # Note - the same Event Hub name is allowed under different configuration (and is why the config is array of Hashes)
+  # Note - the same Event Hub name is allowed under different configurations (and is why the config is array of Hashes)
   # Example:
   # azure_event_hubs {
   #   config_mode => "ADVANCED"
@@ -368,7 +368,6 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   end
 
   def run(queue)
-
     event_hub_threads = []
     named_thread_factory = LogStash::Inputs::Azure::NamedThreadFactory.new("azure_event_hubs-worker")
     scheduled_executor_service = Executors.newScheduledThreadPool(@threads, named_thread_factory)
@@ -422,8 +421,6 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
             @logger.info(msg) unless event_hub['storage_connection']
             options.setInitialPositionProvider(LogStash::Inputs::Azure::LookBackPositionProvider.new(@initial_position_look_back))
           end
-
-
           event_processor_host.registerEventProcessorFactory(LogStash::Inputs::Azure::ProcessorFactory.new(queue, event_hub['codec'].clone, event_hub['checkpoint_interval'], self.method(:decorate), event_hub['decorate_events']), options)
               .whenComplete {|x, e|
                 @logger.info("Event Hub #{event_processor_host.getHostContext.getEventHubPath.to_s} registration complete. ")
