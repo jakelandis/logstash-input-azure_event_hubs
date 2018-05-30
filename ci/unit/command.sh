@@ -9,4 +9,4 @@ cd ../plugins/this
 cp /usr/share/logstash/logstash-core/versions-gem-copy.yml /usr/share/logstash/logstash-core-plugin-api/versions-gem-copy.yml
 ./gradlew vendor
 bundle install
-bundle exec rspec -fd --pattern spec/unit/**/*_spec.rb,spec/unit/**/*_specs.rb
+bundle exec rspec -fd --pattern spec/**/*_spec.rb,spec/**/*_specs.rb
