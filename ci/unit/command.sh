@@ -7,5 +7,5 @@ export PATH=$PATH:$PWD/vendor/jruby/bin
 gem install bundler
 cd ../plugins/this
 cp /usr/share/logstash/logstash-core/versions-gem-copy.yml /usr/share/logstash/logstash-core-plugin-api/versions-gem-copy.yml
-bundle install --path /usr/share/logstash/vendor/bundle
-bundle exec rspec -fd --pattern spec/**/*_spec.rb,spec/**/*_specs.rb
+bundle install
+bundle exec rspec -fd --pattern spec/unit/**/*_spec.rb,spec/unit/**/*_specs.rb
