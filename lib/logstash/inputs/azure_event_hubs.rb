@@ -298,7 +298,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
     # global_config will be merged into the each of the exploded configs, prefer any configuration already scoped over the globally scoped config
     global_config = {}
     params.each do |k, v|
-      if !k.eql?('id') && !k.eql?('event_hubs') && !k.eql?('threads') # don't copy these to the per-event-hub configs
+      if !k.eql?('id') && !k.eql?('event_hubs') && !k.eql?('threads') && !k.eql?('event_hub_connections')  # don't copy these to the per-event-hub configs
         global_config[k] = v
       end
     end
@@ -327,12 +327,14 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
     else # basic config
       params['event_hubs'] = ['dummy'] # trick the :required validation
       if params['event_hub_connections']
-        params['event_hub_connections'].each do |connection|
+        params['event_hub_connections'].each.with_index do |_connection, i|
           begin
+            connection = self.class.replace_placeholders(_connection)
             event_hub_name = ConnectionStringBuilder.new(connection).getEventHubName
+            redacted_connection = connection.gsub(/(SharedAccessKey=)([0-9a-zA-Z=+]*)([;]*)(.*)/, '\\1<redacted>\\3\\4')
+            params['event_hub_connections'][i] = redacted_connection # protect from leaking logs
             raise "invalid Event Hub name" unless event_hub_name
           rescue
-            redacted_connection = connection.gsub(/(SharedAccessKey=)([0-9a-zA-Z=]*)([;]*)(.*)/, '\\1<redacted>\\3\\4')
             raise LogStash::ConfigurationError, "Error parsing event hub string name for connection: '#{redacted_connection}' please ensure that the connection string contains the EntityPath"
           end
           @event_hubs_exploded << {'event_hubs' => [event_hub_name]}.merge({'event_hub_connections' => [::LogStash::Util::Password.new(connection)]}).merge(global_config) {|k, v1, v2| v1}
