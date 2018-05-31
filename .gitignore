@@ -4,3 +4,6 @@ Gemfile.lock
 vendor/
 .gradle
 build/
+*.iml
+target/
+dependency-reduced-pom.xml
