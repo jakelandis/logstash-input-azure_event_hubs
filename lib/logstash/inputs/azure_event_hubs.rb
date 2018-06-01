@@ -329,7 +329,8 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
       if params['event_hub_connections']
         params['event_hub_connections'].each.with_index do |_connection, i|
           begin
-            connection = self.class.replace_placeholders(_connection)
+            connection = self.class.replace_placeholders(_connection) if self.class.respond_to? 'replace_placeholders' # 6.x
+            connection = self.class.replace_env_placeholders(_connection) if self.class.respond_to? 'replace_env_placeholders' # 5.x
             event_hub_name = ConnectionStringBuilder.new(connection).getEventHubName
             redacted_connection = connection.gsub(/(SharedAccessKey=)([0-9a-zA-Z=+]*)([;]*)(.*)/, '\\1<redacted>\\3\\4')
             params['event_hub_connections'][i] = redacted_connection # protect from leaking logs
