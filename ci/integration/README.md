@@ -24,6 +24,11 @@ export EVENT_HUB_CONNECTION1="Endpoint=sb://... your connection string here ..."
 ```
 Note - your connection string must contain the EntityPath (which is the Event Hub name)
 
+Allow Logstash to read the events. Docker compose start 2 instances, and since there is not storage connection specified each instance of Logstash works independently, each reading all of the events.  
+
+```bash
+ci/integration/docker-test.sh no_storage.config
+``` 
 
 Write 1000 events to the Event Hub:
 ```bash
@@ -41,12 +46,7 @@ java -jar target/event-hub-consumer.jar $EVENT_HUB_CONNECTION1
 cd -
 ``` 
 
-Allow Logstash to read the same events. Docker compose start 2 instances, and since there is not storage connection specified each instance of Logstash works independently, each reading all of the events.  
-
-```bash
-ci/integration/docker-test.sh no_storage.config
-``` 
-From a different window
+Verify 1000 events were written with Logstash
 ```bash
 curl -XGET 'localhost:9600/_node/stats/pipelines?pretty'
 curl -XGET 'localhost:9601/_node/stats/pipelines?pretty'
@@ -69,6 +69,12 @@ export STORAGE_CONNECTION1="DefaultEndpointsProtocol=https;AccountName=.... your
 ```
 Note - your Event Hub connection string must contain the EntityPath (which is the Event Hub name)
 
+Allow Logstash to read the same events. Docker compose will start 2 instances, and since there is a storage connection specified the instances of Logstash should work as cluster, each processing some of the events. 
+
+```bash
+ci/integration/docker-test.sh with_storage.config
+``` 
+
 Write 1000 events to the Event Hub:
 ```bash
 cd ci/integration/event_hub_producer
@@ -85,13 +91,7 @@ java -jar target/event-hub-consumer.jar $EVENT_HUB_CONNECTION1
 cd -
 ``` 
 
-Allow Logstash to read the same events. Docker compose will start 2 instances, and since there is a storage connection specified the instances of Logstash should work as cluster, each processing some of the events. 
-
-
-```bash
-ci/integration/docker-test.sh with_storage.config
-``` 
-From a different window
+Verify 1000 events were written with Logstash
 ```bash
 curl -XGET 'localhost:9600/_node/stats/pipelines?pretty'
 curl -XGET 'localhost:9601/_node/stats/pipelines?pretty'
