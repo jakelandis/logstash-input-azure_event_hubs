@@ -120,6 +120,21 @@ describe LogStash::Inputs::AzureEventHubs do
         expect(assertion_count.get).to be == 2
       end
 
+      describe "single connection, no array syntax" do
+        let(:config) do
+          {
+              'event_hub_connections' => 'Endpoint=sb://logstash/;SharedAccessKeyName=activity-log-readonly;SharedAccessKey=something;EntityPath=event_hub1'
+          }
+        end
+        it "it can handle a single connection without the array notation" do
+          expect {input}.to_not raise_error
+          exploded_config = input.event_hubs_exploded
+          expect(exploded_config.size).to be == 1
+          expect(exploded_config[0]['event_hub_connections'][0].value).to eql('Endpoint=sb://logstash/;SharedAccessKeyName=activity-log-readonly;SharedAccessKey=something;EntityPath=event_hub1')
+        end
+      end
+
+
     end
 
     describe "Advanced Config" do

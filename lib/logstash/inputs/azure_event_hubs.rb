@@ -327,7 +327,8 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
     else # basic config
       params['event_hubs'] = ['dummy'] # trick the :required validation
       if params['event_hub_connections']
-        params['event_hub_connections'].each.with_index do |_connection, i|
+        connections = *params['event_hub_connections'] # ensure array
+        connections.each.with_index do |_connection, i|
           begin
             connection = self.class.replace_placeholders(_connection) if self.class.respond_to? 'replace_placeholders' # 6.x
             connection = self.class.replace_env_placeholders(_connection) if self.class.respond_to? 'replace_env_placeholders' # 5.x
