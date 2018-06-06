@@ -4,11 +4,11 @@ Gem::Specification.new do |s|
   s.name          = 'logstash-input-azure_event_hubs'
   s.version       = GEM_VERSION
   s.licenses      = ['Apache-2.0']
-  s.summary       = 'T O D O : Write a short summary, because Rubygems requires one.'
-  s.description   = '{T O D O: Write a longer description or delete this line.'
-  s.homepage      = 'https://elastic.co'
-  s.authors       = ['Jake Landis']
-  s.email         = 'jake.landis@elastic.co'
+  s.summary       = 'Consumes events from Azure Event Hubs for use with Logstash'
+  s.description   = 'This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program'
+  s.homepage      = 'http://www.elastic.co/guide/en/logstash/current/index.html"'
+  s.authors       = ['Elastic']
+  s.email         = 'info@elastic.co'
   s.require_paths = ['lib', 'vendor/jar-dependencies']
 
   # Files
