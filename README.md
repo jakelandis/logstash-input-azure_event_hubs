@@ -41,7 +41,8 @@ bundle install
 - Run tests
 
 ```sh
-bundle exec rspec
+gem install rspec
+bundle exec rspec --pattern spec/**/*_spec.rb
 ```
 
 ### 2. Running your unpublished Plugin in Logstash

@@ -44,9 +44,9 @@ task vendor {
     doLast {
         String vendorPathPrefix = "vendor/jar-dependencies"
         configurations.runtime.allDependencies.each { dep ->
-            File f = configurations.runtime.filter { it.absolutePath.contains("${dep.group}/${dep.name}/${dep.version}") }.singleFile
+            File f = configurations.runtime.filter { it.absolutePath.contains("${dep.group}" + File.separator + "${dep.name}" + File.separator + "${dep.version}") }.singleFile
             String groupPath = dep.group.replaceAll('\\.', '/')
-            File newJarFile = file("${vendorPathPrefix}/${groupPath}/${dep.name}/${dep.version}/${dep.name}-${dep.version}.jar")
+            File newJarFile = file("${vendorPathPrefix}" + File.separator + "${groupPath}" + File.separator + "${dep.name}"+ File.separator + "${dep.version}" + File.separator + "${dep.name}-${dep.version}.jar")
             newJarFile.mkdirs()
             Files.copy(f.toPath(), newJarFile.toPath(), REPLACE_EXISTING)
         }
