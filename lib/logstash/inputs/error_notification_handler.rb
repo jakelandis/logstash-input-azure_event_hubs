@@ -14,7 +14,7 @@ module LogStash
         end
 
         def accept(exception_received_event_args)
-          @logger.error("Error with Event Processor Host #{exception_received_event_args.to_s}")
+          @logger.error("Error with Event Processor Host. ", :exception_received_event_args => exception_received_event_args.to_s)
         end
       end
     end

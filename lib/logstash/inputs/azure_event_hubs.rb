@@ -368,12 +368,12 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
         end
       end
     end
-    @logger.debug("Exploded Event Hub configuration: #{@event_hubs_exploded.to_s}")
+    @logger.debug("Exploded Event Hub configuration.",  :event_hubs_exploded => @event_hubs_exploded.to_s)
   end
 
   def run(queue)
     event_hub_threads = []
-    named_thread_factory = LogStash::Inputs::Azure::NamedThreadFactory.new("azure_event_hubs-worker")
+    named_thread_factory = LogStash::Inputs::Azure::NamedThreadFactory.new("azure_event_hubs-worker", @id)
     scheduled_executor_service = Executors.newScheduledThreadPool(@threads, named_thread_factory)
     @event_hubs_exploded.each do |event_hub|
       event_hub_threads << Thread.new do
@@ -387,7 +387,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
                 event_hub['consumer_group'],
                 event_hub['event_hub_connections'].first.value, #there will only be one in this array by the time it gets here
                 event_hub['storage_connection'].value,
-                event_hub['storage_container'] ? event_hub['storage_container'] : event_hub_name,
+                event_hub.fetch('storage_container', event_hub_name),
                 scheduled_executor_service)
           else
             @logger.warn("You have NOT specified a `storage_connection_string` for #{event_hub_name}. This configuration is only supported for a single Logstash instance.")
@@ -425,30 +425,30 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
             @logger.info(msg) unless event_hub['storage_connection']
             options.setInitialPositionProvider(LogStash::Inputs::Azure::LookBackPositionProvider.new(@initial_position_look_back))
           end
-          event_processor_host.registerEventProcessorFactory(LogStash::Inputs::Azure::ProcessorFactory.new(queue, event_hub['codec'].clone, event_hub['checkpoint_interval'], self.method(:decorate), event_hub['decorate_events']), options)
+          event_processor_host.registerEventProcessorFactory(LogStash::Inputs::Azure::ProcessorFactory.new(queue, event_hub['codec'], event_hub['checkpoint_interval'], self.method(:decorate), event_hub['decorate_events']), options)
               .whenComplete {|x, e|
-                @logger.info("Event Hub #{event_processor_host.getHostContext.getEventHubPath.to_s} registration complete. ")
-                @logger.error("Event Hub #{event_processor_host.getHostContext.getEventHubPath.to_s} failure while registering.", :exception => e, :backtrace => e.backtrace) if e
+                @logger.info("Event Hub registration complete. ", :event_hub_name => event_processor_host.getHostContext.getEventHubPath.to_s )
+                @logger.error("Event Hub failure while registering.", :event_hub_name => event_processor_host.getHostContext.getEventHubPath.to_s, :exception => e, :backtrace => e.backtrace) if e
               }
               .then_accept {|x|
-                @logger.info("Event Hub #{event_processor_host.getHostContext.getEventHubPath.to_s} is processing events... ")
+                @logger.info("Event Hub is processing events... ", :event_hub_name => event_processor_host.getHostContext.getEventHubPath.to_s )
                 # this blocks the completable future chain from progressing, actual work is done via the executor service
                 while !stop?
                   Stud.stoppable_sleep(1) {stop?}
                 end
               }
               .thenCompose {|x|
-                @logger.info("Unregistering #{event_processor_host.getHostContext.getEventHubPath.to_s}... this can take a while... ")
+                @logger.info("Unregistering Event Hub this can take a while... ", :event_hub_name => event_processor_host.getHostContext.getEventHubPath.to_s )
                 event_processor_host.unregisterEventProcessor
               }
               .exceptionally {|e|
-                @logger.error("Event Hub #{event_processor_host.getHostContext.getEventHubPath.to_s} encountered an error.", :exception => e, :backtrace => e.backtrace) if e
+                @logger.error("Event Hub encountered an error.", :event_hub_name => event_processor_host.getHostContext.getEventHubPath.to_s , :exception => e, :backtrace => e.backtrace) if e
                 nil
               }
               .get # this blocks till all of the futures are complete.
           @logger.info("Event Hub #{event_processor_host.getHostContext.getEventHubPath.to_s} is closed.")
         rescue => e
-          @logger.error("Event Hub #{event_hub_name} failed during initialization.", :exception => e, :backtrace => e.backtrace) if e
+          @logger.error("Event Hub failed during initialization.", :event_hub_name => event_hub_name, :exception => e, :backtrace => e.backtrace) if e
           do_stop
         end
       end

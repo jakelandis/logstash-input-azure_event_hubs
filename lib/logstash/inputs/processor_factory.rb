@@ -15,7 +15,7 @@ module LogStash
         end
 
         def createEventProcessor(context)
-          Processor.new(@queue, @codec, @checkpoint_interval, @decorator, @meta_data)
+          Processor.new(@queue, @codec.clone, @checkpoint_interval, @decorator, @meta_data)
         end
 
       end
