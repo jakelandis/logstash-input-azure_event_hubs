@@ -23,25 +23,25 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   config_name "azure_event_hubs"
 
   # This plugin supports two styles of configuration
-  # BASIC - You supply a list of Event Hub connection strings complete with the 'EntityPath' that defines the Event Hub name. All other configuration is shared.
-  # ADVANCED - You supply a list of Event Hub names, and under each name provide that Event Hub's configuration. Most all of the configuration options are identical as the BASIC model, except they are configured per Event Hub.
-  # Defaults to BASIC
+  # basic - You supply a list of Event Hub connection strings complete with the 'EntityPath' that defines the Event Hub name. All other configuration is shared.
+  # advanced - You supply a list of Event Hub names, and under each name provide that Event Hub's configuration. Most all of the configuration options are identical as the basic model, except they are configured per Event Hub.
+  # Defaults to basic
   # Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"  , "Endpoint=sb://example2...;EntityPath=event_hub_name2"  ]
   # }
-  config :config_mode, :validate => ['BASIC', 'ADVANCED', 'basic', 'advanced'], :default => 'BASIC'
+  config :config_mode, :validate => ['basic', 'advanced'], :default => 'basic'
 
-  # ADVANCED MODE ONLY - The event hubs to read from. This is a array of hashes, where the each entry of the array is a hash of the event_hub_name => {configuration}.
-  # Note - most BASIC configuration options are supported under the Event Hub names, and examples proved where applicable
-  # Note - while in ADVANCED mode, if any BASIC options are defined at the top level they will be used if not already defined under the Event Hub name.  e.g. you may define shared configuration at the top level
-  # Note - the required event_hub_connection is named 'event_hub_connection' (singular) which differs from the BASIC configuration option 'event_hub_connections' (plural)
+  # advanced MODE ONLY - The event hubs to read from. This is a array of hashes, where the each entry of the array is a hash of the event_hub_name => {configuration}.
+  # Note - most basic configuration options are supported under the Event Hub names, and examples proved where applicable
+  # Note - while in advanced mode, if any basic options are defined at the top level they will be used if not already defined under the Event Hub name.  e.g. you may define shared configuration at the top level
+  # Note - the required event_hub_connection is named 'event_hub_connection' (singular) which differs from the basic configuration option 'event_hub_connections' (plural)
   # Note - the 'event_hub_connection' may contain the 'EntityPath', but only if it matches the Event Hub name.
   # Note - the same Event Hub name is allowed under different configurations (and is why the config is array of Hashes)
   # Example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
@@ -56,11 +56,11 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   # }
   config :event_hubs, :validate => :array, :required => true # only required for advanced mode
 
-  # BASIC MODE ONLY - The Event Hubs to read from. This is a list of Event Hub connection strings that includes the 'EntityPath'.
+  # basic MODE ONLY - The Event Hubs to read from. This is a list of Event Hub connection strings that includes the 'EntityPath'.
   # All other configuration options will be shared between Event Hubs.
   # Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"  , "Endpoint=sb://example2...;EntityPath=event_hub_name2"  ]
   # }
   config :event_hub_connections, :validate => :array, :required => true # only required for basic mode
@@ -68,15 +68,15 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   # Used to persists the offsets between restarts and ensure that multiple instances of Logstash process different partitions
   # This is *stongly* encouraged to be set for production environments.
   # When this value is set, restarts will pick up from where it left off. Without this value set the initial_position is *always* used.
-  # BASIC Example:
+  # basic Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"]
   #    storage_connection => "DefaultEndpointsProtocol=https;AccountName=example...."
   # }
-  # ADVANCED example:
+  # advanced example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
@@ -89,16 +89,16 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   # The storage container to persist the offsets.
   # Note - don't allow multiple Event Hubs to write to the same container with the same consumer group, else the offsets will be persisted incorrectly.
   # Note - this will default to the event hub name if not defined
-  # BASIC Example:
+  # basic Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"]
   #    storage_connection => "DefaultEndpointsProtocol=https;AccountName=example...."
   #    storage_container => "my_container"
   # }
-  # ADVANCED example:
+  # advanced example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
@@ -115,16 +115,16 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   # }
   config :threads, :validate => :number, :default => 4
 
-  # Consumer group used to read the Event Hub(s). It is recommended to change from the $Defualt to a consumer group specifically for Logstash, and ensure that all instances of Logstash use that consumer group.
-  # BASIC Example:
+  # Consumer group used to read the Event Hub(s). It is recommended to change from the $Default to a consumer group specifically for Logstash, and ensure that all instances of Logstash use that consumer group.
+  # basic Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"]
   #    consumer_group => "logstash"
   # }
-  # ADVANCED example:
+  # advanced example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
@@ -136,35 +136,35 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
 
   # The max size of events are processed together. A checkpoint is created after each batch. Increasing this value may help with performance, but requires more memory.
   # Defaults to 50
-  # BASIC Example:
+  # basic Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"]
-  #    max_batch_size => 50
+  #    max_batch_size => 125
   # }
-  # ADVANCED example:
+  # advanced example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
-  #           max_batch_size => 50
+  #           max_batch_size => 125
   #       }}
   #    ]
   # }
-  config :max_batch_size, :validate => :number, :default => 50
+  config :max_batch_size, :validate => :number, :default => 125
 
   # The max size of events that are retrieved prior to processing. Increasing this value may help with performance, but requires more memory.
   # Defaults to 300
-  # BASIC Example:
+  # basic Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"]
   #    prefetch_count => 300
   # }
-  # ADVANCED example:
+  # advanced example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
@@ -176,15 +176,15 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
 
   # The max time allowed receive events without a timeout.
   # Value is expressed in seconds, default 60
-  # BASIC Example:
+  # basic Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"]
   #    receive_timeout => 60
   # }
-  # ADVANCED example:
+  # advanced example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
@@ -195,46 +195,46 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   config :receive_timeout, :validate => :number, :default => 60
 
   # When first reading from an event hub, start from this position.
-  # HEAD - reads ALL pre-existing events in the event hub
-  # TAIL - reads NO pre-existing events in the event hub
-  # LOOK_BACK - reads TAIL minus N seconds worth of pre-existing events
+  # beginning - reads ALL pre-existing events in the event hub
+  # end - reads NO pre-existing events in the event hub
+  # look_back - reads end minus N seconds worth of pre-existing events
   # Note - If the storage_connection is set, this configuration is only applicable for the very first time Logstash reads from the event hub.
-  # BASIC Example:
+  # basic Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"]
-  #    initial_position => "HEAD"
+  #    initial_position => "beginning"
   # }
-  # ADVANCED example:
+  # advanced example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
-  #           initial_position => "HEAD"
+  #           initial_position => "beginning"
   #       }}
   #    ]
   # }
-  config :initial_position, :validate => ['HEAD', 'TAIL', 'LOOK_BACK', 'head', 'tail', 'look_back'], :default => 'HEAD'
+  config :initial_position, :validate => ['beginning', 'end', 'look_back'], :default => 'beginning'
 
   # The number of seconds to look back for pre-existing events to determine the initial position.
   # Note - If the storage_connection is set, this configuration is only applicable for the very first time Logstash reads from the event hub.
-  # Note - this options is only used when initial_position => "LOOK_BACK"
+  # Note - this options is only used when initial_position => "look_back"
   # Value is expressed in seconds, default is 1 day
-  # BASIC Example:
+  # basic Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"]
-  #    initial_position => "LOOK_BACK"
+  #    initial_position => "look_back"
   #    initial_position_look_back => 86400
   # }
-  # ADVANCED example:
+  # advanced example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
-  #           initial_position => "LOOK_BACK"
+  #           initial_position => "look_back"
   #           initial_position_look_back => 86400
   #       }}
   #    ]
@@ -244,15 +244,15 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   # The interval in seconds between writing checkpoint while processing a batch. Default 5 seconds. Checkpoints can slow down processing, but are needed to know where to start after a restart.
   # Note - checkpoints happen after every batch, so this configuration is only applicable while processing a single batch.
   # Value is expressed in seconds, set to zero to disable
-  # BASIC Example:
+  # basic Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"]
   #    checkpoint_interval => 5
   # }
-  # ADVANCED example:
+  # advanced example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
@@ -271,15 +271,15 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   # [@metadata][azure_event_hubs][sequence] - the event hub sequence for this event
   # [@metadata][azure_event_hubs][timestamp] - the enqueued time of the event
   # [@metadata][azure_event_hubs][event_size] - the size of the event
-  # BASIC Example:
+  # basic Example:
   # azure_event_hubs {
-  #    config_mode => "BASIC"
+  #    config_mode => "basic"
   #    event_hub_connections => ["Endpoint=sb://example1...;EntityPath=event_hub_name1"]
   #    decorate_events => true
   # }
-  # ADVANCED example:
+  # advanced example:
   # azure_event_hubs {
-  #   config_mode => "ADVANCED"
+  #   config_mode => "advanced"
   #   event_hubs => [
   #       { "event_hub_name1" => {
   #           event_hub_connection => "Endpoint=sb://example1..."
@@ -303,7 +303,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
       end
     end
 
-    if params['config_mode'] && params['config_mode'].upcase.eql?('ADVANCED')
+    if params['config_mode'] && params['config_mode'].eql?('advanced')
       params['event_hub_connections'] = ['dummy'] # trick the :required validation
 
       params['event_hubs'].each do |event_hub|
@@ -408,18 +408,18 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
           end
           options = EventProcessorOptions.new
           options.setExceptionNotification(LogStash::Inputs::Azure::ErrorNotificationHandler.new)
-          case @initial_position.upcase
-          when 'HEAD'
+          case @initial_position
+          when 'beginning'
             msg = "Configuring Event Hub #{event_hub_name} to read events all events."
             @logger.debug("If this is the initial read... " + msg) if event_hub['storage_connection']
             @logger.info(msg) unless event_hub['storage_connection']
             options.setInitialPositionProvider(EventProcessorOptions::StartOfStreamInitialPositionProvider.new(options))
-          when 'TAIL'
+          when 'end'
             msg = "Configuring Event Hub #{event_hub_name} to read only new events."
             @logger.debug("If this is the initial read... " + msg) if event_hub['storage_connection']
             @logger.info(msg) unless event_hub['storage_connection']
             options.setInitialPositionProvider(EventProcessorOptions::EndOfStreamInitialPositionProvider.new(options))
-          when 'LOOK_BACK'
+          when 'look_back'
             msg = "Configuring Event Hub #{event_hub_name} to read events starting at 'now - #{@initial_position_look_back}' seconds."
             @logger.debug("If this is the initial read... " + msg) if event_hub['storage_connection']
             @logger.info(msg) unless event_hub['storage_connection']

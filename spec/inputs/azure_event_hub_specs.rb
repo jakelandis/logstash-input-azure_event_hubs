@@ -33,7 +33,7 @@ describe LogStash::Inputs::AzureEventHubs do
           expect(exploded_config[i]['max_batch_size']).to be == 20
           expect(exploded_config[i]['prefetch_count']).to be == 30
           expect(exploded_config[i]['receive_timeout']).to be == 40
-          expect(exploded_config[i]['initial_position']).to eql('LOOK_BACK')
+          expect(exploded_config[i]['initial_position']).to eql('look_back')
           expect(exploded_config[i]['initial_position_look_back']).to be == 50
           expect(exploded_config[i]['checkpoint_interval']).to be == 60
           expect(exploded_config[i]['decorate_events']).to be_truthy
@@ -55,7 +55,7 @@ describe LogStash::Inputs::AzureEventHubs do
             'max_batch_size' => 20,
             'prefetch_count' => 30,
             'receive_timeout' => 40,
-            'initial_position' => 'LOOK_BACK',
+            'initial_position' => 'look_back',
             'initial_position_look_back' => 50,
             'checkpoint_interval' => 60,
             'decorate_events' => true
@@ -143,7 +143,7 @@ describe LogStash::Inputs::AzureEventHubs do
       end
       let(:config) do
         {
-            'config_mode' => 'ADVANCED',
+            'config_mode' => 'advanced',
             'event_hubs' => [
                 {'event_hub_name0' => {
                     'event_hub_connection' => 'Endpoint=sb://...',
@@ -153,7 +153,7 @@ describe LogStash::Inputs::AzureEventHubs do
                     'max_batch_size' => 20,
                     'prefetch_count' => 30,
                     'receive_timeout' => 40,
-                    'initial_position' => 'LOOK_BACK',
+                    'initial_position' => 'look_back',
                     'initial_position_look_back' => 50,
                     'checkpoint_interval' => 60,
                     'decorate_events' => true}},
@@ -163,7 +163,7 @@ describe LogStash::Inputs::AzureEventHubs do
                     'codec' => 'json',
                     'consumer_group' => 'cg1',
                     'receive_timeout' => 41,
-                    'initial_position' => 'tail',
+                    'initial_position' => 'end',
                     'checkpoint_interval' => 61,
                     'decorate_events' => false,
                     'storage_container' => 'alt_container'}},
@@ -191,7 +191,7 @@ describe LogStash::Inputs::AzureEventHubs do
         expect(exploded_config[1]['max_batch_size']).to be == 21 # filled from global
         expect(exploded_config[1]['prefetch_count']).to be == 300 # default
         expect(exploded_config[1]['receive_timeout']).to be == 41
-        expect(exploded_config[1]['initial_position'].upcase).to eql('TAIL')
+        expect(exploded_config[1]['initial_position']).to eql('end')
         expect(exploded_config[1]['initial_position_look_back']).to be == 86400 # default
         expect(exploded_config[1]['checkpoint_interval']).to be == 61
         expect(exploded_config[1]['decorate_events']).to be_falsy
@@ -297,7 +297,7 @@ describe LogStash::Inputs::AzureEventHubs do
       describe "Offset overwritting" do
         let(:config) do
           {
-              'config_mode' => 'ADVANCED',
+              'config_mode' => 'advanced',
               'event_hubs' => [
                   {'event_hub_name0' => {
                       'event_hub_connection' => 'Endpoint=sb://...',
