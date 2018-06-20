@@ -172,6 +172,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   #       }}
   #    ]
   # }
+  # NOTE - This option is intentionally not part of the public documentation. This is a very low level configuration that shouldn't need to be changed by anyone other then an Event Hub expert.
   config :prefetch_count, :validate => :number, :default => 300
 
   # The max time allowed receive events without a timeout.
@@ -192,6 +193,7 @@ class LogStash::Inputs::AzureEventHubs < LogStash::Inputs::Base
   #       }}
   #    ]
   # }
+  # NOTE - This option is intentionally not part of the public documentation. This is a very low level configuration that shouldn't need to be changed by anyone other then an Event Hub expert.
   config :receive_timeout, :validate => :number, :default => 60
 
   # When first reading from an event hub, start from this position.
